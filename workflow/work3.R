@@ -516,11 +516,18 @@ careMgmt2 %>%
 
 
 
+careMgnt %>% 
+        select(benefit_1, benefit_2, benefit_3) %>% 
+        count(benefit_1, benefit_2, benefit_3) %>% 
+        arrange( desc( n))
+       
 
+careMgnt %>% 
+        select(assistance_1, assistance_2, assistance_3) %>% 
+        count( assistance_3) %>% 
+        arrange( desc( n)) 
 
-
-
-
+.
 
 
 
