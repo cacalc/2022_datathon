@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[100]:
+# In[5]:
 
 
 import pandas as pd
@@ -13,17 +13,17 @@ import matplotlib.pyplot as plt
 get_ipython().run_line_magic('matplotlib', 'inline')
 
 
-# In[101]:
+# In[6]:
 
 
-pantryData = pd.read_csv("pantry_anonymized.csv")
+"""pantryData = pd.read_csv("pantry_anonymized.csv")
 pantryData = pantryData[pantryData['unit'] == 'Pounds'] #look at dollars later? maybe not because there's only 100 records
 pantryData['assistance_date'] = pd.to_datetime(pantryData['assistance_date'])
 pantryData.columns
-pantryData['assistance_category'].value_counts()
+pantryData['assistance_category'].value_counts()"""
 
 
-# In[110]:
+# In[7]:
 
 
 def transformSeriesFirstStep(df):
@@ -38,10 +38,9 @@ def transformDF(df):
     df['Time_Period'] = pd.to_datetime(df[['year','month', 'day']])
     return df
 
-def dataTransformation(df):
+def dataTransformation(df, dateColumn):
     if 'year' in df.columns:
         pass
-    
     else:
         df['year'] = df[dateColumn].dt.year
         df['month'] = df[dateColumn].dt.month
@@ -72,21 +71,25 @@ def dataTransformation(df):
     return [dfGroupByFYMonth, dfGroupByFYMonthMax2022, dfGroupByFYMonthMin2022]
 
 def generateIndividualGraph(yAxisName, graphTitle, actualsDF, MinProjectionDF, MaxProjectionDF):
+
     sns.set(rc={'figure.figsize':(8,6)})
     ax = sns.lineplot(x = 'Time_Period', y = yAxisName, data = actualsDF, style = 'forecasted')
-    ax1 = sns.lineplot(x = 'Time_Period', y = yAxisName, data = MinProjectionDF, alpha  = 0.01)
-    ax2 = sns.lineplot(x = 'Time_Period', y = yAxisName, data = MaxProjectionDF, alpha  = 0.01)
+    ax1 = sns.lineplot(x = 'Time_Period', y = yAxisName, data = MinProjectionDF, alpha  = 0.1)
+    ax2 = sns.lineplot(x = 'Time_Period', y = yAxisName, data = MaxProjectionDF, alpha  = 0.1)
     ax.set_title(graphTitle, fontsize=16)
     try:
-        ax.fill_between(x = dfGroupByFYMonthMin2022['Time_Period'], y1 = MaxProjectionDF[yAxisName], y2 = MinProjectionDF[yAxisName], color="blue", alpha=0.1)
+        ax.fill_between(x = MinProjectionDF['Time_Period'], y1 = MinProjectionDF[yAxisName], y2 = MaxProjectionDF[yAxisName], color="blue", alpha=0.05)
     except:
-        plt.show()
-    
+        print("cannot fill in")
+    else:
+        ax.fill_between(x = MinProjectionDF['Time_Period'], y1 = MinProjectionDF[yAxisName], y2 = MaxProjectionDF[yAxisName], color="blue", alpha=0.05) 
+        #print("this is a test for else")
     finally:
-        plt.show()  
+        plt.show() 
+        #print("this is a test for finally")
 
 
-# In[113]:
+# In[8]:
 
 
 #generate overall graph first
@@ -100,34 +103,32 @@ def generateGraphSet(df, dateColumn, specialColumnForCategory, listOfCategories,
             
     #listOfCategories = df[specialColumnForCategory].unique() #create list for iteration
     
-    dfGroupByFYMonth = dataTransformation(df)[0]
-    dfGroupByFYMonthMax2022 = dataTransformation(df)[1]
-    dfGroupByFYMonthMin2022 = dataTransformation(df)[2]  
+    dfGroupByFYMonth = dataTransformation(df, dateColumn)[0]
+    dfGroupByFYMonthMax2022 = dataTransformation(df, dateColumn)[1]
+    dfGroupByFYMonthMin2022 = dataTransformation(df, dateColumn)[2]
+
     generateIndividualGraph(yAxisNameForGraph, 'test', dfGroupByFYMonth, dfGroupByFYMonthMax2022, dfGroupByFYMonthMin2022)
-    print(df.columns)
     
     for subcategory in listOfCategories:
         dfSubCat = df[df[specialColumnForCategory] == subcategory]
-
-        dfGroupByFYMonthSubcat = dataTransformation(dfSubCat)[0]
-        dfGroupByFYMonthMax2022Subcat = dataTransformation(dfSubCat)[1]
-        dfGroupByFYMonthMin2022Subcat = dataTransformation(dfSubCat)[2]  
+        
+        dfGroupByFYMonthSubcat = dataTransformation(dfSubCat, dateColumn)[0]
+        dfGroupByFYMonthMax2022Subcat = dataTransformation(dfSubCat, dateColumn)[1]
+        dfGroupByFYMonthMin2022Subcat = dataTransformation(dfSubCat, dateColumn)[2]  
         generateIndividualGraph(yAxisNameForGraph, subcategory, dfGroupByFYMonthSubcat, dfGroupByFYMonthMin2022Subcat, dfGroupByFYMonthMax2022Subcat)
         #print(dfGroupByFYMonthSubcat)
 
 
-# In[114]:
+# In[ ]:
 
 
-generateGraphSet(pantryData,'assistance_date','assistance_category', 
-                 ['Food Pantry: Holiday Baskets','Food Pantry: Food Pantry Poundage'],
-                 'amount')
 
 
-# In[33]:
+
+# In[9]:
 
 
-dateColumn = 'assistance_date'
+"""dateColumn = 'assistance_date'
 df = pantryData
 df['year'] = df[dateColumn].dt.year
 df['month'] = df[dateColumn].dt.month
@@ -154,24 +155,25 @@ dfGroupByFYMonthMax2022 = transformDF(dfGroupByFYMonthMax2022)
 dfGroupByFYMonth = transformDF(dfGroupByFYMonth)
 
 dfGroupByFYMonth = dfGroupByFYMonth[['year','month','amount','Time_Period', 'forecasted']]
+"""
 
 
-# In[31]:
+# In[10]:
 
 
-sns.set(rc={'figure.figsize':(8,6)})
+"""sns.set(rc={'figure.figsize':(8,6)})
 ax = sns.lineplot(x = 'Time_Period', y = 'amount', data = dfGroupByFYMonth, style = 'forecasted')
 ax1 = sns.lineplot(x = 'Time_Period', y = 'amount', data = dfGroupByFYMonthMax2022,alpha  = 0.01)
 ax2 = sns.lineplot(x = 'Time_Period', y = 'amount', data = dfGroupByFYMonthMin2022, alpha  = 0.01)
 ax.fill_between(x = dfGroupByFYMonthMin2022['Time_Period'], y1 = dfGroupByFYMonthMin2022['amount'], y2 = dfGroupByFYMonthMax2022['amount'], color="blue", alpha=0.1)
 ax.set_title("Number food pantry visits plot by Month", fontsize=16)
-plt.show()    
+plt.show() """   
 
 
-# In[35]:
+# In[11]:
 
 
-generateIndividualGraph('amount', "Number food pantry visits plot by Month")
+#generateIndividualGraph('amount', "Number food pantry visits plot by Month")
 
 
 # In[ ]:
