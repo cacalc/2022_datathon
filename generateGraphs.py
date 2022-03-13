@@ -8,9 +8,11 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import itertools
 #import plotly.graph_objects as go
 
 get_ipython().run_line_magic('matplotlib', 'inline')
+
 
 
 # In[6]:
@@ -45,8 +47,17 @@ def dataTransformation(df, dateColumn):
         df['year'] = df[dateColumn].dt.year
         df['month'] = df[dateColumn].dt.month
 
+    
+        
+    #generate zeros for graph so gaps can be shown 
+    years=[2019,2020,2021]
+    months = range(1,13)    #for some reason range() isn't working
+    result = itertools.product(years, months)
+    zerosDF = pd.DataFrame(result, columns=['year', 'month'])
+    
     dfGroupByFYMonth = df.groupby(['year','month']).count()
-
+    dfGroupByFYMonth = dfGroupByFYMonth.merge(zerosDF, how="outer", on=['month','year'])
+    dfGroupByFYMonth['amount'] = dfGroupByFYMonth['amount'].fillna(0)
     dfGroupByFYMonthAvg2022 = dfGroupByFYMonth.groupby(['month']).mean()['amount']
     dfGroupByFYMonthMin2022 = dfGroupByFYMonth.groupby(['month']).min()['amount']
     dfGroupByFYMonthMax2022 = dfGroupByFYMonth.groupby(['month']).max()['amount']
@@ -67,6 +78,8 @@ def dataTransformation(df, dateColumn):
     dfGroupByFYMonth = transformDF(dfGroupByFYMonth)
 
     dfGroupByFYMonth = dfGroupByFYMonth[['year','month','amount','Time_Period', 'forecasted']]
+   
+    
     
     return [dfGroupByFYMonth, dfGroupByFYMonthMax2022, dfGroupByFYMonthMin2022]
 
@@ -107,7 +120,7 @@ def generateGraphSet(df, dateColumn, specialColumnForCategory, listOfCategories,
     dfGroupByFYMonthMax2022 = dataTransformation(df, dateColumn)[1]
     dfGroupByFYMonthMin2022 = dataTransformation(df, dateColumn)[2]
 
-    generateIndividualGraph(yAxisNameForGraph, 'test', dfGroupByFYMonth, dfGroupByFYMonthMax2022, dfGroupByFYMonthMin2022)
+    generateIndividualGraph(yAxisNameForGraph, 'Full data', dfGroupByFYMonth, dfGroupByFYMonthMax2022, dfGroupByFYMonthMin2022)
     
     for subcategory in listOfCategories:
         dfSubCat = df[df[specialColumnForCategory] == subcategory]
