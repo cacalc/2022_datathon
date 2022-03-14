@@ -40,7 +40,7 @@ def transformDF(df):
     df['Time_Period'] = pd.to_datetime(df[['year','month', 'day']])
     return df
 
-def dataTransformation(df, dateColumn):
+def dataTransformation(df, dateColumn, columnForAnalysis):
     if 'year' in df.columns:
         pass
     else:
@@ -57,10 +57,10 @@ def dataTransformation(df, dateColumn):
     
     dfGroupByFYMonth = df.groupby(['year','month']).count()
     dfGroupByFYMonth = dfGroupByFYMonth.merge(zerosDF, how="outer", on=['month','year'])
-    dfGroupByFYMonth['amount'] = dfGroupByFYMonth['amount'].fillna(0)
-    dfGroupByFYMonthAvg2022 = dfGroupByFYMonth.groupby(['month']).mean()['amount']
-    dfGroupByFYMonthMin2022 = dfGroupByFYMonth.groupby(['month']).min()['amount']
-    dfGroupByFYMonthMax2022 = dfGroupByFYMonth.groupby(['month']).max()['amount']
+    dfGroupByFYMonth[columnForAnalysis] = dfGroupByFYMonth[columnForAnalysis].fillna(0)
+    dfGroupByFYMonthAvg2022 = dfGroupByFYMonth.groupby(['month']).mean()[columnForAnalysis]
+    dfGroupByFYMonthMin2022 = dfGroupByFYMonth.groupby(['month']).min()[columnForAnalysis]
+    dfGroupByFYMonthMax2022 = dfGroupByFYMonth.groupby(['month']).max()[columnForAnalysis]
 
     dfGroupByFYMonthMin2022 = transformSeriesFirstStep(dfGroupByFYMonthMin2022)
     dfGroupByFYMonthMax2022 = transformSeriesFirstStep(dfGroupByFYMonthMax2022)
@@ -77,7 +77,7 @@ def dataTransformation(df, dateColumn):
     dfGroupByFYMonthMax2022 = transformDF(dfGroupByFYMonthMax2022)
     dfGroupByFYMonth = transformDF(dfGroupByFYMonth)
 
-    dfGroupByFYMonth = dfGroupByFYMonth[['year','month','amount','Time_Period', 'forecasted']]
+    dfGroupByFYMonth = dfGroupByFYMonth[['year','month',columnForAnalysis,'Time_Period', 'forecasted']]
    
     
     
@@ -109,25 +109,25 @@ def generateIndividualGraph(yAxisName, graphTitle, actualsDF, MinProjectionDF, M
 #then go by column to iterate
 
 
-def generateGraphSet(df, dateColumn, specialColumnForCategory, listOfCategories, yAxisNameForGraph):
+def generateGraphSet(df, dateColumn, specialColumnForCategory, listOfCategories, columnForAnalysis, yAxisNameForGraph):
     #df - dataFrame for analysis
     #dateColumn - column to use for graphs
     #specialColumn - column to use for separate graphs
             
     #listOfCategories = df[specialColumnForCategory].unique() #create list for iteration
     
-    dfGroupByFYMonth = dataTransformation(df, dateColumn)[0]
-    dfGroupByFYMonthMax2022 = dataTransformation(df, dateColumn)[1]
-    dfGroupByFYMonthMin2022 = dataTransformation(df, dateColumn)[2]
+    dfGroupByFYMonth = dataTransformation(df, dateColumn, columnForAnalysis)[0]
+    dfGroupByFYMonthMax2022 = dataTransformation(df, dateColumn,columnForAnalysis)[1]
+    dfGroupByFYMonthMin2022 = dataTransformation(df, dateColumn, columnForAnalysis)[2]
 
     generateIndividualGraph(yAxisNameForGraph, 'Full data', dfGroupByFYMonth, dfGroupByFYMonthMax2022, dfGroupByFYMonthMin2022)
     
     for subcategory in listOfCategories:
         dfSubCat = df[df[specialColumnForCategory] == subcategory]
         
-        dfGroupByFYMonthSubcat = dataTransformation(dfSubCat, dateColumn)[0]
-        dfGroupByFYMonthMax2022Subcat = dataTransformation(dfSubCat, dateColumn)[1]
-        dfGroupByFYMonthMin2022Subcat = dataTransformation(dfSubCat, dateColumn)[2]  
+        dfGroupByFYMonthSubcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis)[0]
+        dfGroupByFYMonthMax2022Subcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis)[1]
+        dfGroupByFYMonthMin2022Subcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis)[2]  
         generateIndividualGraph(yAxisNameForGraph, subcategory, dfGroupByFYMonthSubcat, dfGroupByFYMonthMin2022Subcat, dfGroupByFYMonthMax2022Subcat)
         #print(dfGroupByFYMonthSubcat)
 
@@ -148,9 +148,9 @@ df['month'] = df[dateColumn].dt.month
 
 dfGroupByFYMonth = df.groupby(['year','month']).count()
 
-dfGroupByFYMonthAvg2022 = dfGroupByFYMonth.groupby(['month']).mean()['amount']
-dfGroupByFYMonthMin2022 = dfGroupByFYMonth.groupby(['month']).min()['amount']
-dfGroupByFYMonthMax2022 = dfGroupByFYMonth.groupby(['month']).max()['amount']
+dfGroupByFYMonthAvg2022 = dfGroupByFYMonth.groupby(['month']).mean()[columnForAnalysis]
+dfGroupByFYMonthMin2022 = dfGroupByFYMonth.groupby(['month']).min()[columnForAnalysis]
+dfGroupByFYMonthMax2022 = dfGroupByFYMonth.groupby(['month']).max()[columnForAnalysis]
     
 dfGroupByFYMonthMin2022 = transformSeriesFirstStep(dfGroupByFYMonthMin2022)
 dfGroupByFYMonthMax2022 = transformSeriesFirstStep(dfGroupByFYMonthMax2022)
@@ -167,7 +167,7 @@ dfGroupByFYMonthMin2022 = transformDF(dfGroupByFYMonthMin2022)
 dfGroupByFYMonthMax2022 = transformDF(dfGroupByFYMonthMax2022)
 dfGroupByFYMonth = transformDF(dfGroupByFYMonth)
 
-dfGroupByFYMonth = dfGroupByFYMonth[['year','month','amount','Time_Period', 'forecasted']]
+dfGroupByFYMonth = dfGroupByFYMonth[['year','month',columnForAnalysis,'Time_Period', 'forecasted']]
 """
 
 
@@ -175,10 +175,10 @@ dfGroupByFYMonth = dfGroupByFYMonth[['year','month','amount','Time_Period', 'for
 
 
 """sns.set(rc={'figure.figsize':(8,6)})
-ax = sns.lineplot(x = 'Time_Period', y = 'amount', data = dfGroupByFYMonth, style = 'forecasted')
-ax1 = sns.lineplot(x = 'Time_Period', y = 'amount', data = dfGroupByFYMonthMax2022,alpha  = 0.01)
-ax2 = sns.lineplot(x = 'Time_Period', y = 'amount', data = dfGroupByFYMonthMin2022, alpha  = 0.01)
-ax.fill_between(x = dfGroupByFYMonthMin2022['Time_Period'], y1 = dfGroupByFYMonthMin2022['amount'], y2 = dfGroupByFYMonthMax2022['amount'], color="blue", alpha=0.1)
+ax = sns.lineplot(x = 'Time_Period', y = columnForAnalysis, data = dfGroupByFYMonth, style = 'forecasted')
+ax1 = sns.lineplot(x = 'Time_Period', y = columnForAnalysis, data = dfGroupByFYMonthMax2022,alpha  = 0.01)
+ax2 = sns.lineplot(x = 'Time_Period', y = columnForAnalysis, data = dfGroupByFYMonthMin2022, alpha  = 0.01)
+ax.fill_between(x = dfGroupByFYMonthMin2022['Time_Period'], y1 = dfGroupByFYMonthMin2022[columnForAnalysis], y2 = dfGroupByFYMonthMax2022[columnForAnalysis], color="blue", alpha=0.1)
 ax.set_title("Number food pantry visits plot by Month", fontsize=16)
 plt.show() """   
 
@@ -186,7 +186,7 @@ plt.show() """
 # In[11]:
 
 
-#generateIndividualGraph('amount', "Number food pantry visits plot by Month")
+#generateIndividualGraph(columnForAnalysis, "Number food pantry visits plot by Month")
 
 
 # In[ ]:
