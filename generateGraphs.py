@@ -54,6 +54,7 @@ def dataTransformation(df, dateColumn, columnForAnalysis):
     months = range(1,13)    #for some reason range() isn't working
     result = itertools.product(years, months)
     zerosDF = pd.DataFrame(result, columns=['year', 'month'])
+    zerosDF = zerosDF[:-3] #remove bottom rows because dates don't go that far
     
     dfGroupByFYMonth = df.groupby(['year','month']).count()
     dfGroupByFYMonth = dfGroupByFYMonth.merge(zerosDF, how="outer", on=['month','year'])
@@ -83,19 +84,19 @@ def dataTransformation(df, dateColumn, columnForAnalysis):
     
     return [dfGroupByFYMonth, dfGroupByFYMonthMax2022, dfGroupByFYMonthMin2022]
 
-def generateIndividualGraph(yAxisName, graphTitle, actualsDF, MinProjectionDF, MaxProjectionDF):
+def generateIndividualGraph(graphTitle, actualsDF, MinProjectionDF, MaxProjectionDF, columnForAnalysis, yAxisName):
 
     sns.set(rc={'figure.figsize':(8,6)})
-    ax = sns.lineplot(x = 'Time_Period', y = yAxisName, data = actualsDF, style = 'forecasted')
-    ax1 = sns.lineplot(x = 'Time_Period', y = yAxisName, data = MinProjectionDF, alpha  = 0.1)
-    ax2 = sns.lineplot(x = 'Time_Period', y = yAxisName, data = MaxProjectionDF, alpha  = 0.1)
+    ax = sns.lineplot(x = 'Time_Period', y = columnForAnalysis, data = actualsDF, style = 'forecasted')
+    ax1 = sns.lineplot(x = 'Time_Period', y = columnForAnalysis, data = MinProjectionDF, alpha  = 0.1)
+    ax2 = sns.lineplot(x = 'Time_Period', y = columnForAnalysis, data = MaxProjectionDF, alpha  = 0.1)
     ax.set_title(graphTitle, fontsize=16)
     try:
-        ax.fill_between(x = MinProjectionDF['Time_Period'], y1 = MinProjectionDF[yAxisName], y2 = MaxProjectionDF[yAxisName], color="blue", alpha=0.05)
+        ax.fill_between(x = MinProjectionDF['Time_Period'], y1 = MinProjectionDF[columnForAnalysis], y2 = MaxProjectionDF[columnForAnalysis], color="blue", alpha=0.05)
     except:
         print("cannot fill in")
     else:
-        ax.fill_between(x = MinProjectionDF['Time_Period'], y1 = MinProjectionDF[yAxisName], y2 = MaxProjectionDF[yAxisName], color="blue", alpha=0.05) 
+        ax.fill_between(x = MinProjectionDF['Time_Period'], y1 = MinProjectionDF[columnForAnalysis], y2 = MaxProjectionDF[columnForAnalysis], color="blue", alpha=0.05) 
         #print("this is a test for else")
     finally:
         plt.show() 
@@ -120,7 +121,7 @@ def generateGraphSet(df, dateColumn, specialColumnForCategory, listOfCategories,
     dfGroupByFYMonthMax2022 = dataTransformation(df, dateColumn,columnForAnalysis)[1]
     dfGroupByFYMonthMin2022 = dataTransformation(df, dateColumn, columnForAnalysis)[2]
 
-    generateIndividualGraph(yAxisNameForGraph, 'Full data', dfGroupByFYMonth, dfGroupByFYMonthMax2022, dfGroupByFYMonthMin2022)
+    generateIndividualGraph(columnForAnalysis, 'Full data', dfGroupByFYMonth, dfGroupByFYMonthMax2022, dfGroupByFYMonthMin2022)
     
     for subcategory in listOfCategories:
         dfSubCat = df[df[specialColumnForCategory] == subcategory]
@@ -128,7 +129,7 @@ def generateGraphSet(df, dateColumn, specialColumnForCategory, listOfCategories,
         dfGroupByFYMonthSubcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis)[0]
         dfGroupByFYMonthMax2022Subcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis)[1]
         dfGroupByFYMonthMin2022Subcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis)[2]  
-        generateIndividualGraph(yAxisNameForGraph, subcategory, dfGroupByFYMonthSubcat, dfGroupByFYMonthMin2022Subcat, dfGroupByFYMonthMax2022Subcat)
+        generateIndividualGraph(columnForAnalysis, subcategory, dfGroupByFYMonthSubcat, dfGroupByFYMonthMin2022Subcat, dfGroupByFYMonthMax2022Subcat)
         #print(dfGroupByFYMonthSubcat)
 
 
