@@ -3,7 +3,6 @@
 
 # In[5]:
 
-
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -40,15 +39,13 @@ def transformDF(df):
     df['Time_Period'] = pd.to_datetime(df[['year','month', 'day']])
     return df
 
-def dataTransformation(df, dateColumn, columnForAnalysis):
+def dataTransformation(df, dateColumn, columnForAnalysis, isDollars):
     if 'year' in df.columns:
         pass
     else:
         df['year'] = df[dateColumn].dt.year
         df['month'] = df[dateColumn].dt.month
 
-    
-        
     #generate zeros for graph so gaps can be shown 
     years=[2019,2020,2021]
     months = range(1,13)    #for some reason range() isn't working
@@ -56,7 +53,11 @@ def dataTransformation(df, dateColumn, columnForAnalysis):
     zerosDF = pd.DataFrame(result, columns=['year', 'month'])
     zerosDF = zerosDF[:-3] #remove bottom rows because dates don't go that far
     
-    dfGroupByFYMonth = df.groupby(['year','month']).count()
+    if (isDollars.upper() == "YES"):
+        dfGroupByFYMonth = df.groupby(['year','month']).sum()
+    else:
+        dfGroupByFYMonth = df.groupby(['year','month']).count()
+        
     dfGroupByFYMonth = dfGroupByFYMonth.merge(zerosDF, how="outer", on=['month','year'])
     dfGroupByFYMonth[columnForAnalysis] = dfGroupByFYMonth[columnForAnalysis].fillna(0)
     dfGroupByFYMonthAvg2022 = dfGroupByFYMonth.groupby(['month']).mean()[columnForAnalysis]
@@ -85,12 +86,13 @@ def dataTransformation(df, dateColumn, columnForAnalysis):
     return [dfGroupByFYMonth, dfGroupByFYMonthMax2022, dfGroupByFYMonthMin2022]
 
 def generateIndividualGraph(graphTitle, actualsDF, MinProjectionDF, MaxProjectionDF, columnForAnalysis, yAxisName):
-
+    #isDollars yes/no
     sns.set(rc={'figure.figsize':(8,6)})
     ax = sns.lineplot(x = 'Time_Period', y = columnForAnalysis, data = actualsDF, style = 'forecasted')
     ax1 = sns.lineplot(x = 'Time_Period', y = columnForAnalysis, data = MinProjectionDF, alpha  = 0.1)
     ax2 = sns.lineplot(x = 'Time_Period', y = columnForAnalysis, data = MaxProjectionDF, alpha  = 0.1)
     ax.set_title(graphTitle, fontsize=16)
+    plt.legend(labels=["Actuals","Forecasted Values"])
     try:
         ax.fill_between(x = MinProjectionDF['Time_Period'], y1 = MinProjectionDF[columnForAnalysis], y2 = MaxProjectionDF[columnForAnalysis], color="blue", alpha=0.05)
     except:
@@ -110,26 +112,29 @@ def generateIndividualGraph(graphTitle, actualsDF, MinProjectionDF, MaxProjectio
 #then go by column to iterate
 
 
-def generateGraphSet(df, dateColumn, specialColumnForCategory, listOfCategories, columnForAnalysis, yAxisNameForGraph):
+def generateGraphSet(df, dateColumn, specialColumnForCategory, listOfCategories, columnForAnalysis, yAxisNameForGraph, isDollars):
     #df - dataFrame for analysis
     #dateColumn - column to use for graphs
     #specialColumn - column to use for separate graphs
             
     #listOfCategories = df[specialColumnForCategory].unique() #create list for iteration
+    #is dollars - knows to sum data
     
-    dfGroupByFYMonth = dataTransformation(df, dateColumn, columnForAnalysis)[0]
-    dfGroupByFYMonthMax2022 = dataTransformation(df, dateColumn,columnForAnalysis)[1]
-    dfGroupByFYMonthMin2022 = dataTransformation(df, dateColumn, columnForAnalysis)[2]
+    dfGroupByFYMonth = dataTransformation(df, dateColumn, columnForAnalysis, isDollars)[0]
+    dfGroupByFYMonthMax2022 = dataTransformation(df, dateColumn,columnForAnalysis, isDollars)[1]
+    dfGroupByFYMonthMin2022 = dataTransformation(df, dateColumn, columnForAnalysis, isDollars)[2]
 
-    generateIndividualGraph(columnForAnalysis, 'Full data', dfGroupByFYMonth, dfGroupByFYMonthMax2022, dfGroupByFYMonthMin2022)
+    generateIndividualGraph(columnForAnalysis = columnForAnalysis, graphTitle = 'Full data', actualsDF = dfGroupByFYMonth, 
+            MaxProjectionDF = dfGroupByFYMonthMax2022, MinProjectionDF = dfGroupByFYMonthMin2022, yAxisName = yAxisNameForGraph)
     
     for subcategory in listOfCategories:
         dfSubCat = df[df[specialColumnForCategory] == subcategory]
         
-        dfGroupByFYMonthSubcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis)[0]
-        dfGroupByFYMonthMax2022Subcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis)[1]
-        dfGroupByFYMonthMin2022Subcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis)[2]  
-        generateIndividualGraph(columnForAnalysis, subcategory, dfGroupByFYMonthSubcat, dfGroupByFYMonthMin2022Subcat, dfGroupByFYMonthMax2022Subcat)
+        dfGroupByFYMonthSubcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis, isDollars)[0]
+        dfGroupByFYMonthMax2022Subcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis, isDollars)[1]
+        dfGroupByFYMonthMin2022Subcat = dataTransformation(dfSubCat, dateColumn, columnForAnalysis, isDollars)[2]  
+        generateIndividualGraph(graphTitle = subcategory, columnForAnalysis = columnForAnalysis, yAxisName = yAxisNameForGraph,
+                actualsDF = dfGroupByFYMonthSubcat, MinProjectionDF = dfGroupByFYMonthMin2022Subcat, MaxProjectionDF = dfGroupByFYMonthMax2022Subcat)
         #print(dfGroupByFYMonthSubcat)
 
 
